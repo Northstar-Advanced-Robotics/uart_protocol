@@ -1,6 +1,7 @@
 #ifndef UART_PROTOCOL_H
 #define UART_PROTOCOL_H
 
+#include <assert.h>
 #include <stdint.h>
 
 #define UART_BAUD_RATE 115200
@@ -49,56 +50,82 @@ enum
 #undef ENUM_MEMBER
 };
 
-typedef uint16_t uart_robot_id_t;
+typedef uint16_t arc_robot_id_t;
 enum
 {
-#define ENUM_MEMBER(name, val) UART_ROBOT_ID_##name = val,
+#define ENUM_MEMBER(name, val) ARC_ROBOT_ID_##name = val,
     ARC_ROBOT_ID_LIST(ENUM_MEMBER)
 #undef ENUM_MEMBER
 };
 
-#define PACKED __attribute__((packed))
-
-// this struct not packed? see vision_comms.hpp:158
 typedef struct
 {
     float yaw;
     float pitch;
     float distance;
-    uart_robot_id_t robot_id;
-    // these fields are not actually used or sent on the wire
-    float max_error_yaw;
-    float max_error_pitch;
+    arc_robot_id_t robot_id;
+    uint8_t padding[2];
 } uart_turret_aim_t;
+static_assert(
+    sizeof(uart_turret_aim_t) == sizeof(float) * 3 + sizeof(arc_robot_id_t) + 2,
+    "Size mismatch");
 
-typedef struct PACKED
+typedef struct
+{
+    uint8_t robot_id;
+} uart_robot_id_t;
+static_assert(sizeof(uart_robot_id_t) == sizeof(uint8_t), "Size mismatch");
+
+typedef struct
 {
     float pitch;
     float yaw;
     float roll;
     float yaw_vel;
 } uart_turret_odometry_t;
+static_assert(sizeof(uart_turret_odometry_t) == sizeof(float) * 4, "Size mismatch");
 
-typedef struct PACKED
+typedef struct
 {
     float vel_x;
     float vel_y;
 } uart_chassis_odometry_t;
+static_assert(sizeof(uart_chassis_odometry_t) == sizeof(float) * 2, "Size mismatch");
 
-typedef struct PACKED
+typedef struct
 {
     uint32_t timestamp;
     uart_chassis_odometry_t chassis_data;
     uart_turret_odometry_t turret_data;
 } uart_odometry_t;
+static_assert(
+    sizeof(uart_odometry_t) ==
+        sizeof(uint32_t) + sizeof(uart_chassis_odometry_t) + sizeof(uart_turret_odometry_t),
+    "Size mismatch");
 
-typedef struct PACKED
+typedef struct
 {
-    float pox_x;
+    float start[2];
+    float end[2];
+    float start_control[2];
+    float end_control[2];
+    float length;
+} uart_autopath_t;
+static_assert(sizeof(uart_autopath_t) == sizeof(float) * 9, "Size mismatch");
+
+typedef struct
+{
+    uint16_t health;
+} uart_health_t;
+static_assert(sizeof(uart_health_t) == sizeof(uint16_t), "Size mismatch");
+
+typedef struct
+{
+    float pos_x;
     float pos_y;
     float heading;
     uint32_t timestamp;
 } uart_localization_t;
+static_assert(sizeof(uart_localization_t) == sizeof(float) * 3 + sizeof(uint32_t), "Size mismatch");
 
-#undef PACKED
 #endif  // #ifndef UART_PROTOCOL_H

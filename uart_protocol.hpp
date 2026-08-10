@@ -3,7 +3,7 @@
 
 #include <cstdint>
 
-#include "protocol.h"
+#include "uart_protocol.h"
 
 namespace uart
 {
